@@ -62,6 +62,13 @@ def main():
     st.write("")
     st.write("")
     st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
     st.write("Written by Hanif Muhammad Rifqi")
 if __name__ == "__main__":
     main()
