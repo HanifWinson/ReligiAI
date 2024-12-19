@@ -54,7 +54,14 @@ def main():
             st.text_area("Response from OpenAI:", response, height=200)
         else:
             st.warning("Please enter a message before submitting.")
-            
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
     st.write("Written by Hanif Muhammad Rifqi")
 if __name__ == "__main__":
     main()
