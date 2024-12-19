@@ -41,7 +41,7 @@ def get_chat_completion(user_message):
 def main():
     st.title("Chat with OpenAI")
     st.write("Type a message below to interact with OpenAI's GPT API.")
-    st.write("Written by Hanif Muhammad Rifqi")
+    
 
     # Input box for user message
     user_message = st.text_input("Your message:", value="")
@@ -54,6 +54,7 @@ def main():
             st.text_area("Response from OpenAI:", response, height=200)
         else:
             st.warning("Please enter a message before submitting.")
-
+            
+    st.write("Written by Hanif Muhammad Rifqi")
 if __name__ == "__main__":
     main()
