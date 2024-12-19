@@ -1,56 +1,58 @@
 import streamlit as st
 from openai import OpenAI
 
-# Show title and description.
-st.title("💬 Chatbot")
-st.write(
-    "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-    "You can also learn how to build this app step by step by [following our tutorial](https://docs.streamlit.io/develop/tutorials/llms/build-conversational-apps)."
-)
+client = OpenAI(api_key="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")
+import time
+import logging
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-openai_api_key = st.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
-    # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+# Set your OpenAI API key
 
-    # Create a session state variable to store the chat messages. This ensures that the
-    # messages persist across reruns.
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+# Function to call the OpenAI ChatCompletion API with retries
+def get_chat_completion(user_message):
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": user_message},
+    ]
+    model = "gpt-3.5-turbo"
 
-    # Display the existing chat messages via `st.chat_message`.
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    for attempt in range(5):  # Retry up to 5 times
+        try:
+            logging.info("Attempting to call OpenAI API (Attempt %d)", attempt + 1)
+            response = client.chat.completions.create(model=model,
+            messages=messages)
+            logging.info("API call successful!")
+            return response.choices[0].message.content
+        except Exception as e:
+            if "Rate limit exceeded" in str(e):
+                logging.warning("Rate limit exceeded. Retrying in %d seconds...", 2 ** attempt)
+                time.sleep(2 ** attempt)  # Exponential backoff
+            elif "Invalid API key" in str(e):
+                logging.error("Authentication error: Invalid API key.")
+                return "Error: Invalid API key."
+            else:
+                logging.error("An unexpected error occurred: %s", str(e))
+                return f"An unexpected error occurred: {str(e)}"
+    return "Failed to get a response from the OpenAI API after multiple attempts."
 
-    # Create a chat input field to allow the user to enter a message. This will display
-    # automatically at the bottom of the page.
-    if prompt := st.chat_input("What is up?"):
+# Streamlit app
+def main():
+    st.title("Chat with OpenAI")
+    st.write("Type a message below to interact with OpenAI's GPT API.")
 
-        # Store and display the current prompt.
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    # Input box for user message
+    user_message = st.text_input("Your message:", value="")
 
-        # Generate a response using the OpenAI API.
-        stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
-        )
+    # Submit button
+    if st.button("Send"):
+        if user_message.strip():
+            with st.spinner("Connecting to OpenAI..."):
+                response = get_chat_completion(user_message)
+            st.text_area("Response from OpenAI:", response, height=200)
+        else:
+            st.warning("Please enter a message before submitting.")
 
-        # Stream the response to the chat using `st.write_stream`, then store it in 
-        # session state.
-        with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+if __name__ == "__main__":
+    main()
